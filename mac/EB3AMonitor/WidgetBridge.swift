@@ -12,7 +12,8 @@ final class WidgetBridge {
         let reload = policy.shouldReload(state, now: state.updatedAt)
         guard reload || state.updatedAt.timeIntervalSince(lastWrite) >= 30, let dir = SharedStore.containerURL else { return }
         let snap = SharedSnapshot(state: state, remaining: remaining,
-                                  socLast24h: SharedSnapshot.socSeries(from: history, now: state.updatedAt))
+                                  socLast24h: SharedSnapshot.socSeries(from: history, now: state.updatedAt),
+                                  solarTodayWh: solarEnergyWh(history, since: Calendar.current.startOfDay(for: state.updatedAt)))
         do {
             try SharedStore.write(snap, to: dir)
             lastWrite = state.updatedAt

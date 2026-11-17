@@ -12,9 +12,10 @@ final class SharedSnapshotTests: XCTestCase {
 
     func testSnapshotRoundTripAndStale() throws {
         let dir = tmpDir()
-        let snap = SharedSnapshot(state: sample(soc: 80, at: t0), remaining: 3600, socLast24h: [80, 81])
+        let snap = SharedSnapshot(state: sample(soc: 80, at: t0), remaining: 3600, socLast24h: [80, 81], solarTodayWh: 420)
         try SharedStore.write(snap, to: dir)
         XCTAssertEqual(SharedStore.read(from: dir), snap)
+        XCTAssertEqual(SharedStore.read(from: dir)?.solarTodayWh, 420)
         XCTAssertFalse(snap.isStale(now: t0 + 599))
         XCTAssertTrue(snap.isStale(now: t0 + 601))
     }

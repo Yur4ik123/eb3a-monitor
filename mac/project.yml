@@ -18,7 +18,9 @@ targets:
   EB3AMonitor:
     type: application
     platform: macOS
-    sources: [EB3AMonitor]
+    sources:
+      - EB3AMonitor
+      - EB3AWidget/StationWidgetView.swift
     dependencies:
       - package: EB3AKit
       - target: EB3AWidget

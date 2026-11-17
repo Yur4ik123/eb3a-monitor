@@ -6,6 +6,16 @@ import SwiftUI
 /// Рендер поповера з тестовими даними в PNG: `EB3AMonitor --snapshot > base64`.
 @MainActor
 enum Snapshot {
+    static func emit(_ view: some View) {
+        let host = NSHostingView(rootView: view)
+        host.appearance = NSAppearance(named: .darkAqua)
+        host.frame = NSRect(origin: .zero, size: host.fittingSize)
+        host.layoutSubtreeIfNeeded()
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        print("PNG:" + (rep.representation(using: .png, properties: [:])?.base64EncodedString() ?? ""))
+    }
+
     static func render() {
         var regs: [UInt16: UInt16] = [:]
         for b in Reg.pollBlocks { for a in b.start..<b.start + b.count { regs[a] = 0 } }
@@ -23,6 +33,15 @@ enum Snapshot {
                                  acOutW: 100, dcOutW: 0, gridPresent: h < 10, solarCharging: sun > 0)
         })
 
+        if let w = ProcessInfo.processInfo.environment["SNAP_WIDGET"] {
+            let snap = SharedSnapshot(state: model.link.state!, remaining: model.link.remaining,
+                                      socLast24h: SharedSnapshot.socSeries(from: model.history.last24h, now: now),
+                                      solarTodayWh: 420)
+            let size: WidgetSize = w == "small" ? .small : .medium
+            emit(StationWidgetView(snapshot: snap, date: now, size: size).padding(16)
+                .frame(width: size == .small ? 170 : 364, height: 170).background(Color(white: 0.12)))
+            return
+        }
         let host = NSHostingView(rootView: PopoverView(model: model, debugBusy: ProcessInfo.processInfo.environment["SNAP_BUSY"]).background(Color(nsColor: .windowBackgroundColor)))
         host.appearance = NSAppearance(named: .darkAqua)
         host.frame = NSRect(origin: .zero, size: host.fittingSize)

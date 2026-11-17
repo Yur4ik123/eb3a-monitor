@@ -5,11 +5,13 @@ public struct SharedSnapshot: Codable, Equatable, Sendable {
     public var state: StationState
     public var remaining: TimeInterval?
     public var socLast24h: [Int]
+    public var solarTodayWh: Double
 
-    public init(state: StationState, remaining: TimeInterval?, socLast24h: [Int]) {
+    public init(state: StationState, remaining: TimeInterval?, socLast24h: [Int], solarTodayWh: Double = 0) {
         self.state = state
         self.remaining = remaining
         self.socLast24h = socLast24h
+        self.solarTodayWh = solarTodayWh
     }
 
     public func isStale(now: Date, maxAge: TimeInterval = 600) -> Bool {
