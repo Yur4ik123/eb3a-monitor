@@ -2,6 +2,9 @@ import AppKit
 import CoreBluetooth
 import EB3AKit
 import Observation
+import os
+
+let log = Logger(subsystem: "com.legion.eb3amonitor", category: "link")
 
 enum LinkError: Error {
     case notAllowed, notConnected, timeout, exception(UInt8), notConfirmed
@@ -12,7 +15,9 @@ enum LinkError: Error {
 final class StationLink: NSObject {
     enum Status { case idle, scanning, connecting, connected, paused, bluetoothOff }
 
-    private(set) var status: Status = .idle
+    private(set) var status: Status = .idle {
+        didSet { if status != oldValue { log.notice("status \(String(describing: self.status), privacy: .public)") } }
+    }
     private(set) var state: StationState?
     private(set) var remaining: TimeInterval?
     @ObservationIgnored var onState: ((StationState) -> Void)?
@@ -42,6 +47,7 @@ final class StationLink: NSObject {
     }
 
     func start() {
+        log.notice("start")
         central = CBCentralManager(delegate: self, queue: nil)
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.wake() }
@@ -152,16 +158,21 @@ final class StationLink: NSObject {
             attempt = 0
             guard let s = StationState(registers: regs, at: Date()) else { return true }
             estimator.add(netW: Double(s.batteryNetW), at: s.updatedAt)
+            if state.map({ s.updatedAt.timeIntervalSince($0.updatedAt) > 60 || $0.soc != s.soc }) ?? true {
+                log.notice("soc \(s.soc) solar \(s.solarW)W grid \(s.gridPresent)")
+            }
             state = s
             remaining = estimator.remaining(soc: s.soc)
             onState?(s)
         } catch LinkError.timeout {
+            log.error("timeout")
             timeouts += 1
             if timeouts >= 3, let p = peripheral {
                 central.cancelPeripheralConnection(p)
                 return false
             }
         } catch {
+            log.error("poll error: \(String(describing: error), privacy: .public)")
             if case LinkError.notConnected = error { return false }
         }
         return true
@@ -219,6 +230,8 @@ final class StationLink: NSObject {
 
 extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
     nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        let st = central.state.rawValue
+        log.notice("central state \(st, privacy: .public)")
         MainActor.assumeIsolated {
             if central.state == .poweredOn {
                 if isPaused { status = .paused } else { connectOrScan() }
@@ -233,6 +246,7 @@ extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
     nonisolated func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
                                     advertisementData: [String: Any], rssi RSSI: NSNumber) {
         let name = peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? ""
+        log.notice("discovered \(name, privacy: .public)")
         MainActor.assumeIsolated {
             guard name.hasPrefix("EB3A") else { return }
             central.stopScan()
@@ -246,6 +260,7 @@ extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
 
     nonisolated func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+        log.error("connect failed: \(String(describing: error), privacy: .public)")
         MainActor.assumeIsolated { teardown(); scheduleReconnect() }
     }
 
