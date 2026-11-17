@@ -24,6 +24,7 @@ enum Snapshot {
         regs[Reg.led] = 4; regs[Reg.eco] = 1; regs[Reg.ecoHours] = 2; regs[Reg.chargeMode] = 0; regs[Reg.powerLifting] = 1
         let model = AppModel(startLink: false)
         model.link.injectForSnapshot(StationState(registers: regs, at: Date())!)
+        if ProcessInfo.processInfo.environment["SNAP_PICKER"] != nil { model.link.injectChoosingForSnapshot() }
         let now = Date()
         model.history.injectForSnapshot((0..<1440).map { i in
             let t = now.addingTimeInterval(Double(i - 1440) * 60)

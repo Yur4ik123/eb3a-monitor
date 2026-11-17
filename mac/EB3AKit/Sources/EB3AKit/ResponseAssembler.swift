@@ -48,7 +48,11 @@ public struct ResponseAssembler {
             guard buf.count >= total else { return nil }
             let frame = Array(buf[0..<total])
             try checkCRC(frame)
-            guard Int(frame[2]) == count * 2 else { throw ModbusError.wrongLength }
+            guard Int(frame[2]) == count * 2 else {
+                // Цілий валідний кадр іншої довжини — запізніла відповідь на попередній запит.
+                buf.removeFirst(total)
+                return try append(Data())
+            }
             return .registers(stride(from: 3, to: total - 2, by: 2).map { UInt16(frame[$0]) << 8 | UInt16(frame[$0 + 1]) })
         case .write(let echo):
             guard buf.count >= 8 else { return nil }

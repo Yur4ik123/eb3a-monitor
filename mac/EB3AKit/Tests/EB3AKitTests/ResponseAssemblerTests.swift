@@ -37,4 +37,13 @@ final class ResponseAssemblerTests: XCTestCase {
         var a = ResponseAssembler(expect: .read(count: 2))
         XCTAssertEqual(try a.append(Data([0xC0, 0xF1, 0x01, 0x03, 0x04, 0, 0, 0, 1, 0x3B, 0xF3])), .registers([0, 1]))
     }
+
+    func testLateFrameOfOtherLengthIsSkipped() throws {
+        var a = ResponseAssembler(expect: .read(count: 2))
+        // запізнілий кадр попереднього запиту (1 регістр), далі — наш (2 регістри)
+        let late = Data([0x01, 0x03, 0x02, 0x00, 0x05])
+        let lateFrame = late + Data([UInt8(Modbus.crc16(Array(late)) & 0xFF), UInt8(Modbus.crc16(Array(late)) >> 8)])
+        XCTAssertNil(try a.append(lateFrame))
+        XCTAssertEqual(try a.append(Data([0x01, 0x03, 0x04, 0x00, 0x00, 0x00, 0x01, 0x3B, 0xF3])), .registers([0, 1]))
+    }
 }

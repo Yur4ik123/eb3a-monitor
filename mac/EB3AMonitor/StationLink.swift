@@ -20,6 +20,17 @@ final class StationLink: NSObject {
     }
     private(set) var state: StationState?
     private(set) var remaining: TimeInterval?
+    /// Режим вибору станції: скан без автопідключення.
+    private(set) var choosing = false
+    private(set) var discovered: [Discovered] = []
+    var stationName: String? { defaults.string(forKey: "stationName") }
+    var stationID: UUID? { defaults.string(forKey: "peripheralID").flatMap(UUID.init(uuidString:)) }
+
+    struct Discovered: Identifiable, Equatable {
+        let id: UUID
+        let name: String
+        var rssi: Int
+    }
     @ObservationIgnored var onState: ((StationState) -> Void)?
 
     @ObservationIgnored private var central: CBCentralManager!
@@ -57,6 +68,13 @@ final class StationLink: NSObject {
     }
 
     #if DEBUG
+    func injectChoosingForSnapshot() {
+        choosing = true
+        status = .scanning
+        discovered = [Discovered(id: UUID(), name: "EB3A2200000000001", rssi: -48),
+                      Discovered(id: UUID(), name: "EB3A2310001234567", rssi: -82)]
+    }
+
     func injectForSnapshot(_ s: StationState) {
         state = s
         status = .connected
@@ -76,6 +94,35 @@ final class StationLink: NSObject {
         if central.state == .poweredOn { connectOrScan() } else { status = .bluetoothOff }
     }
 
+    func startChoosing() {
+        guard central.state == .poweredOn else { status = .bluetoothOff; return }
+        teardown()
+        isPaused = false
+        choosing = true
+        discovered = []
+        status = .scanning
+        central.scanForPeripherals(withServices: [Self.service], options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+    }
+
+    func choose(_ id: UUID) {
+        guard let d = discovered.first(where: { $0.id == id }) else { return }
+        defaults.set(id.uuidString, forKey: "peripheralID")
+        defaults.set(d.name, forKey: "stationName")
+        state = nil
+        estimator = RuntimeEstimator()
+        finishChoosing()
+    }
+
+    func cancelChoosing() { finishChoosing() }
+
+    private func finishChoosing() {
+        choosing = false
+        discovered = []
+        if central.isScanning { central.stopScan() }
+        attempt = 0
+        connectOrScan()
+    }
+
     func write(_ writes: [(address: UInt16, value: UInt16)]) async throws {
         guard writes.allSatisfy({ WritePolicy.isAllowed(address: $0.address, value: $0.value) }) else { throw LinkError.notAllowed }
         guard status == .connected else { throw LinkError.notConnected }
@@ -93,7 +140,7 @@ final class StationLink: NSObject {
     // MARK: - Підключення
 
     private func connectOrScan() {
-        guard !isPaused, central.state == .poweredOn else { return }
+        guard !isPaused, !choosing, central.state == .poweredOn else { return }
         reconnectTask?.cancel()
         if let s = defaults.string(forKey: "peripheralID"), let id = UUID(uuidString: s),
            let p = central.retrievePeripherals(withIdentifiers: [id]).first {
@@ -282,16 +329,28 @@ extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
     nonisolated func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
                                     advertisementData: [String: Any], rssi RSSI: NSNumber) {
         let name = peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? ""
-        log.notice("discovered \(name, privacy: .public)")
+        let rssi = RSSI.intValue
         MainActor.assumeIsolated {
-            guard name.hasPrefix("EB3A") else { return }
+            guard Station.isSupported(name: name) else { return }
+            if choosing {
+                if let i = discovered.firstIndex(where: { $0.id == peripheral.identifier }) {
+                    discovered[i].rssi = rssi
+                } else {
+                    log.notice("found \(name, privacy: .public)")
+                    discovered.append(Discovered(id: peripheral.identifier, name: name, rssi: rssi))
+                }
+                return
+            }
+            log.notice("discovered \(name, privacy: .public)")
             central.stopScan()
             defaults.set(peripheral.identifier.uuidString, forKey: "peripheralID")
+            defaults.set(name, forKey: "stationName")
             connect(peripheral)
         }
     }
 
     nonisolated func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        if let name = peripheral.name { UserDefaults.standard.set(name, forKey: "stationName") }
         peripheral.discoverServices([StationLink.service])
     }
 

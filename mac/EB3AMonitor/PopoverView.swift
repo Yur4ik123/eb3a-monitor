@@ -14,7 +14,9 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let s = fresh {
+            if link.choosing {
+                StationPickerView(link: link)
+            } else if let s = fresh {
                 header(s)
                 if s.overTemp {
                     Label("Перегрів станції", systemImage: "thermometer.high")
@@ -87,10 +89,20 @@ struct PopoverView: View {
                 Circle().fill(link.status == .connected ? .green : .orange).frame(width: 7, height: 7)
                 Text(statusText).font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                if link.status == .paused {
+                if link.choosing {
+                    EmptyView()
+                } else if link.status == .paused {
                     Button("Підключитись") { link.resume() }.controlSize(.small)
                 } else {
                     Button("Звільнити станцію") { link.pause() }.controlSize(.small)
+                }
+            }
+            HStack {
+                Image(systemName: "bolt.batteryblock").foregroundStyle(.secondary)
+                Text(link.stationName.map(Station.shortName) ?? "станцію не обрано").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                if !link.choosing {
+                    Button("Змінити станцію") { link.startChoosing() }.controlSize(.small)
                 }
             }
             HStack {
