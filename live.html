@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EB3A Live</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#262a33; --fg:#e6e8ec; --mute:#8a90a0;
+          --acc:#4cc38a; --warn:#f2b84b; --chg:#3d6df2; --off:#5a5f6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.4 -apple-system,system-ui,sans-serif; }
+  header { display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  h1 { font-size:16px; margin:0; font-weight:600; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--off); }
+  .dot.on { background:var(--acc); box-shadow:0 0 8px var(--acc); }
+  .meta { color:var(--mute); font-size:12px; }
+  .sp { flex:1; }
+  button, input { background:var(--card); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font:inherit; }
+  button { cursor:pointer; } button:hover { border-color:var(--mute); }
+  main { padding:16px 20px; display:grid; gap:16px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .card .k { color:var(--mute); font-size:12px; }
+  .card .v { font-size:24px; font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .soc { height:6px; background:var(--line); border-radius:3px; margin-top:8px; overflow:hidden; }
+  .soc > div { height:100%; background:var(--acc); transition:width .4s; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:13px; background:var(--line); }
+  .pill.on { background:var(--acc); color:#0b1a12; }
+  .cols { display:grid; grid-template-columns:1fr 340px; gap:16px; align-items:start; }
+  @media (max-width:900px) { .cols { grid-template-columns:1fr; } }
+  h2 { font-size:13px; color:var(--mute); font-weight:500; margin:0 0 8px; text-transform:uppercase; letter-spacing:.04em; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:4px; }
+  .r { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-variant-numeric:tabular-nums; transition:background 1.5s; }
+  .r .a { color:var(--mute); font-size:11px; display:flex; justify-content:space-between; }
+  .r .n { font-size:10px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .r .val { font-size:14px; }
+  .r.zero .val { color:var(--off); }
+  .r.diff { border-color:var(--warn); }
+  .r.diff .val { color:var(--warn); }
+  .r.flash { background:var(--chg); transition:none; }
+  .r.known { border-left:3px solid var(--acc); }
+  .filters { display:flex; gap:12px; margin-bottom:8px; color:var(--mute); font-size:12px; }
+  .log { background:var(--card); border:1px solid var(--line); border-radius:10px; max-height:70vh; overflow:auto; font-variant-numeric:tabular-nums; }
+  .log div { padding:5px 10px; border-bottom:1px solid var(--line); font-size:12px; }
+  .log .t { color:var(--mute); margin-right:6px; }
+  .err { color:#f27a7a; font-size:12px; }
+  .chartbar { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .chartbar h2 { margin:0; }
+  .seg { display:flex; gap:2px; }
+  .seg button { padding:4px 10px; font-size:12px; }
+  .seg button.on { background:var(--line); border-color:var(--mute); }
+  .charts { display:grid; grid-template-columns:1fr 2fr; gap:10px; }
+  @media (max-width:900px) { .charts { grid-template-columns:1fr; } }
+  .chartbox { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .ct { color:var(--mute); font-size:12px; margin-bottom:6px; display:flex; gap:12px; flex-wrap:wrap; }
+  .legend { display:flex; gap:10px; flex-wrap:wrap; }
+  .legend i { display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+  canvas { width:100%; height:220px; display:block; }
+  .ctrls { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
+  .ctrl { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .ctrl .k { color:var(--mute); font-size:12px; margin-bottom:6px; display:flex; justify-content:space-between; }
+  .ctrl .opts { display:flex; gap:4px; flex-wrap:wrap; }
+  .ctrl button { padding:5px 10px; font-size:13px; }
+  .ctrl button.on { background:var(--acc); color:#0b1a12; border-color:var(--acc); }
+  .ctrl button:disabled { opacity:.5; cursor:wait; }
+  .ok { color:var(--acc); } .bad { color:#f27a7a; }
+  select { background:var(--card); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:6px; font:inherit; }
+  .explore .opts { align-items:center; }
+  .xout { margin:8px 0 0; font:12px/1.5 ui-monospace,Menlo,monospace; color:var(--fg); white-space:pre-wrap; max-height:240px; overflow:auto; }
+</style>
+</head>
+<body>
+<header>
+  <span id="dot" class="dot"></span><h1>EB3A Live</h1>
+  <span id="meta" class="meta">—</span>
+  <span class="sp"></span>
+  <input id="label" placeholder="назва знімка" size="14">
+  <button id="snap">Знімок</button>
+  <button id="base">Скинути базу</button>
+</header>
+<main>
+  <div id="err" class="err"></div>
+  <section class="cards" id="cards"></section>
+  <section>
+    <div class="chartbar"><h2>Керування</h2><span class="sp"></span><span id="wres" class="meta"></span></div>
+    <div class="ctrls" id="ctrls"></div>
+  </section>
+  <section>
+    <div class="chartbar"><h2>Дослідження (лише читання)</h2><span class="sp"></span><span id="scanst" class="meta"></span></div>
+    <div class="ctrl explore">
+      <div class="opts">
+        <select id="xfc"><option value="3">FC03 holding</option><option value="4">FC04 input</option>
+          <option value="1">FC01 coils</option><option value="2">FC02 discrete</option><option value="17">FC11 slave id</option></select>
+        <input id="xaddr" type="number" value="90" min="0" max="65535" style="width:90px" title="адреса">
+        <input id="xcnt" type="number" value="10" min="1" max="100" style="width:64px" title="кількість">
+        <button id="xread">Запит</button>
+        <span class="sp"></span>
+        <input id="xs" type="number" value="0" style="width:80px" title="від">
+        <input id="xe" type="number" value="8000" style="width:80px" title="до">
+        <button id="xscan">Сканувати</button>
+      </div>
+      <pre id="xout" class="xout"></pre>
+    </div>
+  </section>
+  <section>
+    <div class="chartbar">
+      <h2>Історія</h2>
+      <span class="sp"></span>
+      <div class="seg" id="range">
+        <button data-m="15">15 хв</button><button data-m="60" class="on">1 год</button>
+        <button data-m="360">6 год</button><button data-m="0">усе</button>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="chartbox"><div class="ct">Заряд, %</div><canvas id="cSoc"></canvas></div>
+      <div class="chartbox"><div class="ct">Потужність, W <span id="legend" class="legend"></span></div><canvas id="cPwr"></canvas></div>
+    </div>
+  </section>
+  <div class="cols">
+    <section>
+      <h2>Регістри</h2>
+      <div class="filters">
+        <label><input type="checkbox" id="fNZ"> лише ненульові</label>
+        <label><input type="checkbox" id="fDiff"> лише змінені від бази</label>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+    <section>
+      <h2>Журнал змін</h2>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const cells = {};
+let last = 0;
+
+const CARDS = [
+  ["Заряд", s => s[43] + "%", s => s[43]],
+  ["Батарея (оцінка)", s => {
+    const p = s[36] + s[37] - s[38] - s[39];
+    return p > 0 ? `<span style="color:var(--acc)">+${p} W</span> <span class="k">заряд</span>`
+         : p < 0 ? `<span style="color:var(--warn)">${p} W</span> <span class="k">розряд</span>` : "0 W";
+  }],
+  ["AC вхід", s => s[37] + " W"],
+  ["Напруга мережі", s => s[45] ? (s[77] / 10).toFixed(1) + " V" : `<span style="color:var(--off)">—</span>`],
+  ["DC вхід", s => s[36] + " W" + (s[44] ? ` <span class="k">${(s[86] / 100).toFixed(2)} V</span>` : "")],
+  ["AC вихід", s => s[38] + " W"],
+  ["DC вихід", s => s[39] + " W"],
+  ["AC", s => pill(s[3007])],
+  ["DC", s => pill(s[3008])],
+  ["ECO", s => pill(s[3063])],
+  ["Power lifting", s => pill(s[3066])],
+];
+const pill = v => `<span class="pill ${v ? "on" : ""}">${v ? "ON" : "OFF"}</span>`;
+
+function renderCards(r) {
+  $("cards").innerHTML = CARDS.map(([k, f, soc]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v">${f(r)}</div>` +
+    (soc ? `<div class="soc"><div style="width:${soc(r)}%"></div></div>` : "") + `</div>`).join("");
+}
+
+function renderGrid(st) {
+  const r = st.regs, b = st.baseline, now = Date.now() / 1000;
+  const nz = $("fNZ").checked, onlyDiff = $("fDiff").checked;
+  for (const a of Object.keys(r)) {
+    let c = cells[a];
+    if (!c) {
+      c = document.createElement("div");
+      c.className = "r";
+      const name = st.known[a] || "";
+      if (name) c.classList.add("known");
+      c.innerHTML = `<div class="a"><span>${a}</span></div><div class="val"></div><div class="n">${name}</div>`;
+      c.title = name || "невідомий";
+      $("grid").appendChild(c);
+      cells[a] = c;
+    }
+    const v = r[a], diff = b[a] !== undefined && b[a] !== v;
+    c.querySelector(".val").textContent = v;
+    c.classList.toggle("zero", v === 0);
+    c.classList.toggle("diff", diff);
+    c.title = (st.known[a] || "невідомий") + (diff ? ` | база: ${b[a]}` : "") + ` | 0x${v.toString(16).padStart(4, "0")}`;
+    const ch = st.changed_at[a];
+    if (ch && ch > last) { c.classList.add("flash"); requestAnimationFrame(() => requestAnimationFrame(() => c.classList.remove("flash"))); }
+    c.style.display = (nz && v === 0 && !diff) || (onlyDiff && !diff) ? "none" : "";
+  }
+}
+
+function renderLog(log) {
+  $("log").innerHTML = log.length ? log.map(e =>
+    `<div><span class="t">${e.t}</span><b>${e.addr}</b> ${e.name || "?"}: ${e.old} → <b>${e.new}</b></div>`).join("")
+    : `<div class="t">поки без змін</div>`;
+}
+
+async function tick() {
+  try {
+    const st = await (await fetch("/state")).json();
+    $("dot").classList.toggle("on", st.connected);
+    $("err").textContent = st.error || "";
+    const age = st.updated ? Math.round(Date.now() / 1000 - st.updated) : "—";
+    $("meta").textContent = `${st.connected ? "підключено" : "немає з'єднання"} · оновлено ${age} с тому · повний ${st.poll_ms ?? "—"} мс · швидкий ${st.fast_ms ?? "—"} мс`;
+    if (Object.keys(st.regs).length) { renderCards(st.regs); renderGrid(st); renderCtrls(st.regs); }
+    renderLog(st.log);
+    renderScan(st.scan);
+    last = st.updated || last;
+  } catch { $("dot").classList.remove("on"); $("meta").textContent = "сервер не відповідає"; }
+}
+
+$("base").onclick = () => fetch("/baseline", { method: "POST" }).then(tick);
+$("snap").onclick = async () => {
+  const res = await (await fetch("/snap?label=" + encodeURIComponent($("label").value), { method: "POST" })).json();
+  $("snap").textContent = "✓ " + res.label; setTimeout(() => $("snap").textContent = "Знімок", 2000);
+};
+$("fNZ").onchange = $("fDiff").onchange = tick;
+setInterval(tick, 1000); tick();
+
+// --- керування ---
+const ONOFF = [[0, "Вимк"], [1, "Увімк"]];
+const CONTROLS = [
+  [3007, "AC вихід", ONOFF],
+  [3008, "DC вихід", ONOFF],
+  [3034, "Ліхтар", [[4, "Вимк"], [1, "Слабкий"], [2, "Сильний"], [3, "SOS"]]],
+  [3065, "Режим заряду", [[0, "Standard"], [1, "Silent"], [2, "Turbo"]]],
+  [3066, "Power lifting", ONOFF],
+  [3063, "ECO (3063)", ONOFF],
+  [3061, "ECO? (3061, невідомий)", ONOFF],
+  [3064, "Таймер ECO", [[1, "1 год"], [2, "2 год"], [3, "3 год"], [4, "4 год"]]],
+];
+$("ctrls").innerHTML = CONTROLS.map(([a, name, opts]) =>
+  `<div class="ctrl"><div class="k"><span>${name}</span><span>r${a}=<b id="cv${a}">—</b></span></div>
+   <div class="opts">${opts.map(([v, l]) => `<button data-a="${a}" data-v="${v}">${l}</button>`).join("")}</div></div>`).join("");
+
+function renderCtrls(r) {
+  for (const b of $("ctrls").querySelectorAll("button")) b.classList.toggle("on", r[b.dataset.a] == b.dataset.v);
+  for (const [a] of CONTROLS) $("cv" + a).textContent = r[a] ?? "—";
+}
+
+$("ctrls").onclick = async e => {
+  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  const a = b.dataset.a, v = b.dataset.v, btns = $("ctrls").querySelectorAll(`button[data-a="${a}"]`);
+  btns.forEach(x => x.disabled = true);
+  $("wres").innerHTML = `запис r${a}=${v}…`;
+  try {
+    const res = await (await fetch(`/write?addr=${a}&value=${v}`, { method: "POST" })).json();
+    $("wres").innerHTML = res.ok
+      ? `<span class="ok">✓ r${a}=${v}: підтверджено пристроєм ${res.ack_ms} мс, у регістрі ${res.confirm_ms} мс</span>`
+      : `<span class="bad">✗ r${a}=${v}: ${res.error}</span>`;
+  } catch (err) { $("wres").innerHTML = `<span class="bad">✗ ${err}</span>`; }
+  btns.forEach(x => x.disabled = false);
+  tick();
+};
+
+// --- дослідження ---
+function fmtRaw(fc, addr, res) {
+  if (res.error) return "✗ " + res.error;
+  if (res.exc !== undefined) return `Modbus exception ${res.exc}` + ({ 1: " (функція не підтримується)", 2: " (адреса недоступна)", 3: " (значення)" }[res.exc] || "");
+  if (res.timeout) return "таймаут, без відповіді" + (res.raw ? ` (частково: ${res.raw})` : "");
+  const h = res.data;
+  if (fc == 3 || fc == 4) {
+    const regs = h.match(/.{4}/g) || [];
+    return regs.map((x, i) => `${String(addr + i).padStart(5)}: ${String(parseInt(x, 16)).padStart(5)}  0x${x}`).join("\n");
+  }
+  const ascii = (h.match(/.{2}/g) || []).map(b => { const c = parseInt(b, 16); return c >= 32 && c < 127 ? String.fromCharCode(c) : "."; }).join("");
+  return `hex: ${h}\nascii: ${ascii}`;
+}
+
+$("xread").onclick = async () => {
+  const fc = +$("xfc").value, addr = +$("xaddr").value, cnt = +$("xcnt").value;
+  $("xout").textContent = "…";
+  const res = await (await fetch(`/raw?fc=${fc}&addr=${addr}&count=${cnt}`, { method: "POST" })).json();
+  $("xout").textContent = `FC${fc.toString(16).padStart(2, "0")} @${addr} ×${cnt}\n` + fmtRaw(fc, addr, res);
+};
+$("xscan").onclick = async () => {
+  const fc = +$("xfc").value, s = +$("xs").value, e = +$("xe").value;
+  if (!confirm(`Сканувати FC${fc} ${s}–${e}? Опитування стане на паузу (~${Math.round((e - s) / 10 * 0.1 / 60) + 1} хв).`)) return;
+  const res = await (await fetch(`/scan?fc=${fc}&start=${s}&end=${e}&chunk=10`, { method: "POST" })).json();
+  if (!res.ok) $("xout").textContent = "✗ " + res.error;
+};
+
+function renderScan(sc) {
+  if (!sc) { $("scanst").textContent = ""; return; }
+  const pct = Math.round((sc.at - sc.start) / (sc.end - sc.start) * 100);
+  const err = Object.entries(sc.errors || {}).map(([k, v]) => `${k}: ${v}`).join(", ");
+  $("scanst").textContent = `FC${sc.fc} ${sc.start}–${sc.end}: ${sc.running ? pct + "%" : "готово"} · знайдено блоків ${sc.found}` +
+    (err ? ` · ${err}` : "") + (sc.file ? ` · ${sc.file}` : "") + (sc.error ? ` · помилка ${sc.error}` : "");
+}
+
+// --- графіки ---
+const SERIES = [
+  ["ac_in", "AC вхід", "#4cc38a"], ["dc_in", "DC вхід", "#f2b84b"],
+  ["ac_out", "AC вихід", "#5b8def"], ["dc_out", "DC вихід", "#b07cf2"],
+  ["batt", "Батарея (+розряд / −заряд)", "#e86a6a", true],
+];
+$("legend").innerHTML = SERIES.map(([, n, c, d]) =>
+  `<span><i style="background:${c};${d ? "opacity:.8" : ""}"></i>${n}</span>`).join("");
+
+let hist = null, rangeMin = 60, hover = null;
+
+function fmtT(ts) { const d = new Date(ts * 1000); return d.toTimeString().slice(0, 5); }
+
+function niceMax(v) {
+  if (v <= 0) return 10;
+  const p = 10 ** Math.floor(Math.log10(v)), n = v / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+}
+
+function draw(canvas, t, lines, yMin, yMax, unit) {
+  const dpr = devicePixelRatio || 1, W = canvas.clientWidth, H = canvas.clientHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  const g = canvas.getContext("2d"); g.scale(dpr, dpr);
+  const L = 42, R = 8, T = 8, B = 20, pw = W - L - R, ph = H - T - B;
+  g.font = "11px -apple-system,system-ui,sans-serif"; g.fillStyle = "#8a90a0"; g.strokeStyle = "#262a33";
+  if (t.length < 2) { g.fillText("ще замало даних", L + 8, T + 20); return; }
+  const t0 = t[0], t1 = t[t.length - 1], X = v => L + (v - t0) / (t1 - t0 || 1) * pw;
+  const Y = v => T + ph - (v - yMin) / (yMax - yMin) * ph;
+  for (let i = 0; i <= 4; i++) {
+    const v = yMin + (yMax - yMin) * i / 4, y = Y(v);
+    g.beginPath(); g.moveTo(L, y); g.lineTo(W - R, y); g.stroke();
+    g.textAlign = "right"; g.fillText(Math.round(v) + unit, L - 6, y + 4);
+  }
+  g.textAlign = "center";
+  for (let i = 0; i <= 4; i++) { const v = t0 + (t1 - t0) * i / 4; g.fillText(fmtT(v), X(v), H - 5); }
+  if (yMin < 0) { g.strokeStyle = "#3a3f4a"; g.beginPath(); g.moveTo(L, Y(0)); g.lineTo(W - R, Y(0)); g.stroke(); }
+  for (const [vals, color, dashed] of lines) {
+    g.strokeStyle = color; g.lineWidth = 1.6; g.setLineDash(dashed ? [4, 3] : []);
+    g.beginPath(); vals.forEach((v, i) => i ? g.lineTo(X(t[i]), Y(v)) : g.moveTo(X(t[i]), Y(v))); g.stroke();
+  }
+  g.setLineDash([]); g.lineWidth = 1;
+  if (hover !== null && hover < t.length) {
+    const x = X(t[hover]);
+    g.strokeStyle = "#8a90a0"; g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke();
+    const rows = [fmtT(t[hover]) + ":" + String(new Date(t[hover] * 1000).getSeconds()).padStart(2, "0"),
+                  ...lines.map(([v, c, , n]) => [c, `${n}: ${v[hover]}${unit}`])];
+    const bw = 190, bh = rows.length * 15 + 6, bx = x + bw + 10 > W ? x - bw - 8 : x + 8;
+    g.fillStyle = "rgba(15,17,21,.92)"; g.fillRect(bx, T, bw, bh);
+    g.textAlign = "left";
+    rows.forEach((r, i) => {
+      if (typeof r === "string") { g.fillStyle = "#e6e8ec"; g.fillText(r, bx + 6, T + 14); return; }
+      g.fillStyle = r[0]; g.fillRect(bx + 6, T + 8 + i * 15, 8, 3); g.fillStyle = "#e6e8ec"; g.fillText(r[1], bx + 18, T + 13 + i * 15);
+    });
+  }
+}
+
+function render() {
+  if (!hist) return;
+  const h = hist, t = h.t;
+  h.batt = t.map((_, i) => h.ac_out[i] + h.dc_out[i] - h.ac_in[i] - h.dc_in[i]);
+  draw($("cSoc"), t, [[h.soc, "#4cc38a", false, "Заряд"]], 0, 100, "%");
+  const all = SERIES.flatMap(([k]) => h[k]);
+  const hi = niceMax(Math.max(...all, 10)), lo = Math.min(...all) < 0 ? -niceMax(-Math.min(...all)) : 0;
+  draw($("cPwr"), t, SERIES.map(([k, n, c, d]) => [h[k], c, d, n]), lo, hi, "W");
+}
+
+async function loadHist() {
+  try { hist = await (await fetch("/history?minutes=" + rangeMin)).json(); render(); } catch {}
+}
+
+$("range").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  rangeMin = +b.dataset.m;
+  [...$("range").children].forEach(x => x.classList.toggle("on", x === b));
+  loadHist();
+};
+for (const c of [$("cSoc"), $("cPwr")]) {
+  c.onmousemove = e => {
+    if (!hist?.t.length) return;
+    const r = c.getBoundingClientRect(), f = (e.clientX - r.left - 42) / (r.width - 50);
+    hover = Math.max(0, Math.min(hist.t.length - 1, Math.round(f * (hist.t.length - 1)))); render();
+  };
+  c.onmouseleave = () => { hover = null; render(); };
+}
+addEventListener("resize", render);
+setInterval(loadHist, 5000); loadHist();
+</script>
+</body>
+</html>

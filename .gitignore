@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+logs/
+dumps/
+snaps/
+.idea/
+.DS_Store
+mac/**/.build/
+mac/*.xcodeproj/
+DerivedData/
+.superpowers/
