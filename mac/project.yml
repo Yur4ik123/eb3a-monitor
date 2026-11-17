@@ -1,0 +1,38 @@
+name: EB3AMonitor
+options:
+  bundleIdPrefix: com.legion
+  deploymentTarget:
+    macOS: "26.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: <TEAM_ID>
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_HARDENED_RUNTIME: YES
+packages:
+  EB3AKit:
+    path: EB3AKit
+targets:
+  EB3AMonitor:
+    type: application
+    platform: macOS
+    sources: [EB3AMonitor]
+    dependencies:
+      - package: EB3AKit
+    info:
+      path: EB3AMonitor/Info.plist
+      properties:
+        CFBundleDisplayName: EB3A Monitor
+        LSUIElement: true
+        NSBluetoothAlwaysUsageDescription: Підключення до зарядної станції Bluetti EB3A
+    entitlements:
+      path: EB3AMonitor/EB3AMonitor.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.device.bluetooth: true
+        com.apple.security.application-groups: [<TEAM_ID>.eb3a]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.legion.eb3amonitor

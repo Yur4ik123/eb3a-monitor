@@ -28,7 +28,7 @@ public struct SharedSnapshot: Codable, Equatable, Sendable {
 }
 
 public enum SharedStore {
-    public static let groupID = "<CERT_ID>.eb3a"
+    public static let groupID = "<TEAM_ID>.eb3a"
     static let fileName = "snapshot.json"
 
     public static var containerURL: URL? {

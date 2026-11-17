@@ -146,8 +146,8 @@ Xcode-проєкт у `mac/` поруч із Python-інструментами. 
 
 ### Підпис
 
-- **Безкоштовний Personal Team** (рішення власника), Team ID `<CERT_ID>`. Платної підписки немає.
-- Entitlements: App Sandbox, Bluetooth, App Group з префіксом Team ID (`<CERT_ID>.eb3a`, macOS-стиль, не `group.`).
+- **Безкоштовний Personal Team** (рішення власника), Team ID `<TEAM_ID>`. Платної підписки немає.
+- Entitlements: App Sandbox, Bluetooth, App Group з префіксом Team ID (`<TEAM_ID>.eb3a`, macOS-стиль, не `group.`).
 - `NSBluetoothAlwaysUsageDescription` в Info.plist.
 - **Ризик:** віджет + App Group на безкоштовній команді можуть не працювати. Тому віджет — **останній етап**. Якщо не вийде: власник вирішує, чи брати платну підписку ($99/рік); застосунок у рядку меню від цього не залежить.
 

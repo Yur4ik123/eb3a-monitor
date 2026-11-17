@@ -9,3 +9,4 @@ mac/**/.build/
 mac/*.xcodeproj/
 DerivedData/
 .superpowers/
+.build-dd/
