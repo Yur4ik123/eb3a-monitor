@@ -26,7 +26,7 @@ struct EB3AMonitorApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            Text(String(describing: model.link.status)).padding()
+            PopoverView(model: model)
         } label: {
             Text(model.menuBarText)
         }
