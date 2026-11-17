@@ -7,6 +7,6 @@ let package = Package(
     products: [.library(name: "EB3AKit", targets: ["EB3AKit"])],
     targets: [
         .target(name: "EB3AKit"),
-        .testTarget(name: "EB3AKitTests", dependencies: ["EB3AKit"]),
+        .testTarget(name: "EB3AKitTests", dependencies: ["EB3AKit"], resources: [.copy("Fixtures")]),
     ]
 )
