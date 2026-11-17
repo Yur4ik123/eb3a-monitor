@@ -32,8 +32,8 @@ struct PopoverView: View {
             Divider()
             footer
         }
+        .frame(width: 332)
         .padding(14)
-        .frame(width: 340)
     }
 
     private func header(_ s: StationState) -> some View {

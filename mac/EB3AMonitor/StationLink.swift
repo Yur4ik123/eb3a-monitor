@@ -54,6 +54,14 @@ final class StationLink: NSObject {
         }
     }
 
+    #if DEBUG
+    func injectForSnapshot(_ s: StationState) {
+        state = s
+        status = .connected
+        remaining = 3 * 3600 + 40 * 60
+    }
+    #endif
+
     func pause() {
         isPaused = true
         teardown()

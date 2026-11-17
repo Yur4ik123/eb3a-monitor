@@ -8,8 +8,8 @@ final class AppModel {
     private(set) var now = Date()
     @ObservationIgnored private var ticker: Timer?
 
-    init() {
-        link.start()
+    init(startLink: Bool = true) {
+        if startLink { link.start() }
         ticker = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.now = Date() }
         }
@@ -23,6 +23,15 @@ final class AppModel {
 @main
 struct EB3AMonitorApp: App {
     @State private var model = AppModel()
+
+    init() {
+        #if DEBUG
+        if CommandLine.arguments.contains("--snapshot") {
+            Snapshot.render()
+            exit(0)
+        }
+        #endif
+    }
 
     var body: some Scene {
         MenuBarExtra {

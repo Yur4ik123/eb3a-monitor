@@ -6,8 +6,10 @@ public enum MenuBarText {
     /// Джерела живлення + заряд. Прогноз — лише в поповері.
     public static func make(state: StationState?, now: Date) -> String {
         guard let s = state, now.timeIntervalSince(s.updatedAt) <= staleAfter else { return "🔋 —" }
-        let grid = s.gridPresent ? "⚡" : "⚡✕"
-        let solar = s.solarPresent ? " ☀ \(s.solarW)W " : ""
-        return "\(grid)\(solar) 🔋 \(s.soc)%"
+        var parts: [String] = []
+        if s.gridPresent { parts.append("⚡") }
+        if s.solarPresent { parts.append("☀ \(s.solarW)W ") }
+        parts.append("🔋 \(s.soc)%")
+        return parts.joined(separator: " ")
     }
 }

@@ -38,9 +38,9 @@ final class RuntimeAndTextTests: XCTestCase {
     }
 
     func testTextBlackout() {
-        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, grid: false), now: sampleTime), "⚡✕ 🔋 87%")
+        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, grid: false), now: sampleTime), "🔋 87%")
         XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, solar: 60, solarPresent: true, grid: false), now: sampleTime),
-                       "⚡✕ ☀ 60W  🔋 87%")
+                       "☀ 60W  🔋 87%")
     }
 
     func testStaleStateShowsDash() {
