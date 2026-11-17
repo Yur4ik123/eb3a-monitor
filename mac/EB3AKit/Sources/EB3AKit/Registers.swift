@@ -28,7 +28,8 @@ public enum Reg {
     public static let chargeMode: UInt16 = 3065
     public static let powerLifting: UInt16 = 3066
 
-    public static let pollBlocks: [(start: UInt16, count: UInt16)] = [(10, 53), (70, 21), (210, 10), (3000, 67)]
+    /// Дрібні блоки: великі (53+ регістрів) станція віддає за ~3 с.
+    public static let pollBlocks: [(start: UInt16, count: UInt16)] = [(36, 14), (50, 11), (77, 10), (3000, 10), (3030, 5), (3060, 7)]
 
     static let decoded: Set<UInt16> = [
         solarW, gridW, acOutW, dcOutW, generated, soc, solarPresent, gridPresent, solarCharging, upsActive,

@@ -39,4 +39,13 @@ final class StationStateTests: XCTestCase {
         let covered = Set(Reg.pollBlocks.flatMap { b in (b.start..<b.start + b.count) })
         XCTAssertTrue(Reg.decoded.isSubset(of: covered))
     }
+
+    func testPollBlocksAreSmall() {
+        // Блоки 53/67 регістрів станція віддає за ~3 с (таймаут), блоки ≤14 — за ~0.1 с.
+        XCTAssertTrue(Reg.pollBlocks.allSatisfy { $0.count <= 14 })
+    }
+
+    func testPollBlocksStartAtValidAddresses() {
+        XCTAssertTrue(Reg.pollBlocks.allSatisfy { (1...210).contains($0.start) || (3000...3077).contains($0.start) })
+    }
 }

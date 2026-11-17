@@ -298,6 +298,7 @@ final class StationLink: NSObject {
         return try await withCheckedThrowingContinuation { cont in
             if let old = pending { old.cont.resume(throwing: LinkError.notConnected) }
             pending = (id, ResponseAssembler(expect: expect), cont)
+            log.debug("TX#\(id) \(cmd.map { String(format: "%02x", $0) }.joined(separator: " "), privacy: .public)")
             p.writeValue(cmd, for: ch, type: .withResponse)
             Task { [weak self] in
                 try? await Task.sleep(for: .seconds(Self.responseTimeout))
@@ -394,6 +395,7 @@ extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
         MainActor.assumeIsolated {
             guard ok, writeChar != nil else { return }
             watchdog?.cancel()
+            timeouts = 0
             status = .connected
             startPolling()
         }
@@ -401,6 +403,7 @@ extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     nonisolated func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard let data = characteristic.value else { return }
+        log.debug("RX \(data.count)B \(data.prefix(6).map { String(format: "%02x", $0) }.joined(separator: " "), privacy: .public)")
         MainActor.assumeIsolated {
             guard var p = pending else { return }
             do {
