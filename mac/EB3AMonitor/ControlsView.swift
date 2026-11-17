@@ -16,14 +16,14 @@ struct ControlsView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 if Self.acControlVerified {
-                    toggle("AC", isOn: state.acCommand) { on in
+                    toggle("AC", key: "ac", isOn: state.acCommand) { on in
                         if !on && !state.gridPresent { confirmACOff = true } else { send("ac", [(Reg.ac, on ? 1 : 0)]) }
                     }
                 } else {
                     Label("AC: не перевірено", systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                toggle("DC", isOn: state.dcCommand) { send("dc", [(Reg.dc, $0 ? 1 : 0)]) }
+                toggle("DC", key: "dc", isOn: state.dcCommand) { send("dc", [(Reg.dc, $0 ? 1 : 0)]) }
             }
 
             picker("Ліхтар", key: "led", current: state.led.raw,
@@ -33,14 +33,14 @@ struct ControlsView: View {
                    options: [(0, "Standard"), (1, "Silent"), (2, "Turbo")]) { send("charge", [(Reg.chargeMode, $0)]) }
 
             HStack {
-                toggle("ECO", isOn: state.ecoOn) { send("eco", WritePolicy.ecoWrites(on: $0)) }
+                toggle("ECO", key: "eco", isOn: state.ecoOn) { send("eco", WritePolicy.ecoWrites(on: $0)) }
                 if state.ecoOn {
                     picker("", key: "ecoHours", current: UInt16(state.ecoHours),
                            options: (1...4).map { (UInt16($0), "\($0) год") }) { send("ecoHours", [(Reg.ecoHours, $0)]) }
                 }
             }
 
-            toggle("Power lifting", isOn: state.powerLifting) { send("lift", [(Reg.powerLifting, $0 ? 1 : 0)]) }
+            toggle("Power lifting", key: "lift", isOn: state.powerLifting) { send("lift", [(Reg.powerLifting, $0 ? 1 : 0)]) }
 
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
         }
@@ -55,10 +55,13 @@ struct ControlsView: View {
         return ""
     }
 
-    private func toggle(_ title: String, isOn: Bool, action: @escaping (Bool) -> Void) -> some View {
-        Toggle(title, isOn: Binding(get: { isOn }, set: action))
-            .toggleStyle(.switch)
-            .controlSize(.small)
+    private func toggle(_ title: String, key: String, isOn: Bool, action: @escaping (Bool) -> Void) -> some View {
+        HStack(spacing: 4) {
+            Toggle(title, isOn: Binding(get: { isOn }, set: action))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+            ProgressView().controlSize(.mini).frame(width: 16).opacity(busy == key ? 1 : 0)
+        }
     }
 
     private func picker(_ title: String, key: String, current: UInt16?, options: [(UInt16, String)],
@@ -70,7 +73,7 @@ struct ControlsView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            if busy == key { ProgressView().controlSize(.small) }
+            ProgressView().controlSize(.mini).frame(width: 16).opacity(busy == key ? 1 : 0)
         }
     }
 

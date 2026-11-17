@@ -3,11 +3,11 @@ import Foundation
 public enum MenuBarText {
     public static let staleAfter: TimeInterval = 30
 
-    public static func make(state: StationState?, remaining: TimeInterval?, now: Date) -> String {
+    /// Джерела живлення + заряд. Прогноз — лише в поповері.
+    public static func make(state: StationState?, now: Date) -> String {
         guard let s = state, now.timeIntervalSince(s.updatedAt) <= staleAfter else { return "🔋 —" }
-        if !s.gridPresent {
-            return "⚡✕ 🔋 \(s.soc)%" + (remaining.map { " · \(formatRemaining($0))" } ?? "")
-        }
-        return s.solarPresent ? "☀ \(s.solarW)W  🔋 \(s.soc)%" : "🔋 \(s.soc)%"
+        let grid = s.gridPresent ? "⚡" : "⚡✕"
+        let solar = s.solarPresent ? " ☀ \(s.solarW)W " : ""
+        return "\(grid)\(solar) 🔋 \(s.soc)%"
     }
 }

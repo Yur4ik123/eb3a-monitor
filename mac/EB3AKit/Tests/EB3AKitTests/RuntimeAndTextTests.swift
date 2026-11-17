@@ -29,23 +29,22 @@ final class RuntimeAndTextTests: XCTestCase {
     }
 
     func testTextWithGridAndSun() {
-        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, solar: 142, solarPresent: true), remaining: nil, now: sampleTime),
-                       "☀ 142W  🔋 87%")
+        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, solar: 142, solarPresent: true), now: sampleTime),
+                       "⚡ ☀ 142W  🔋 87%")
     }
 
     func testTextGridNoPanel() {
-        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87), remaining: nil, now: sampleTime), "🔋 87%")
+        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87), now: sampleTime), "⚡ 🔋 87%")
     }
 
     func testTextBlackout() {
-        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, grid: false), remaining: 13200, now: sampleTime),
-                       "⚡✕ 🔋 87% · ~3:40")
-        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, grid: false), remaining: nil, now: sampleTime),
-                       "⚡✕ 🔋 87%")
+        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, grid: false), now: sampleTime), "⚡✕ 🔋 87%")
+        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87, solar: 60, solarPresent: true, grid: false), now: sampleTime),
+                       "⚡✕ ☀ 60W  🔋 87%")
     }
 
     func testStaleStateShowsDash() {
-        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87), remaining: nil, now: sampleTime + 31), "🔋 —")
-        XCTAssertEqual(MenuBarText.make(state: nil, remaining: nil, now: sampleTime), "🔋 —")
+        XCTAssertEqual(MenuBarText.make(state: sample(soc: 87), now: sampleTime + 31), "🔋 —")
+        XCTAssertEqual(MenuBarText.make(state: nil, now: sampleTime), "🔋 —")
     }
 }

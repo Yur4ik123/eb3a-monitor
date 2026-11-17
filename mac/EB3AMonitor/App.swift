@@ -16,7 +16,7 @@ final class AppModel {
     }
 
     var menuBarText: String {
-        MenuBarText.make(state: link.state, remaining: link.remaining, now: max(now, link.state?.updatedAt ?? now))
+        MenuBarText.make(state: link.state, now: max(now, link.state?.updatedAt ?? now))
     }
 }
 
