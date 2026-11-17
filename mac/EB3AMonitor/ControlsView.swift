@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ControlsView: View {
     /// Запис 3007 вмикається лише після ручної перевірки на станції.
-    static let acControlVerified = false
+    static let acControlVerified = true
 
     let link: StationLink
     let state: StationState
