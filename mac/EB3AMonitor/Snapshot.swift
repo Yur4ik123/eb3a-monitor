@@ -14,6 +14,14 @@ enum Snapshot {
         regs[Reg.led] = 4; regs[Reg.eco] = 1; regs[Reg.ecoHours] = 2; regs[Reg.chargeMode] = 0; regs[Reg.powerLifting] = 1
         let model = AppModel(startLink: false)
         model.link.injectForSnapshot(StationState(registers: regs, at: Date())!)
+        let now = Date()
+        model.history.injectForSnapshot((0..<1440).map { i in
+            let t = now.addingTimeInterval(Double(i - 1440) * 60)
+            let h = Double(i) / 60
+            let sun = max(0, sin((h - 6) / 12 * .pi)) * 180
+            return HistoryRecord(minute: t, soc: Int(60 + 30 * sin(h / 24 * 2 * .pi)), solarW: sun, gridW: 0,
+                                 acOutW: 100, dcOutW: 0, gridPresent: h < 10, solarCharging: sun > 0)
+        })
 
         let host = NSHostingView(rootView: PopoverView(model: model, debugBusy: ProcessInfo.processInfo.environment["SNAP_BUSY"]).background(Color(nsColor: .windowBackgroundColor)))
         host.appearance = NSAppearance(named: .darkAqua)

@@ -21,10 +21,12 @@ struct PopoverView: View {
                         .foregroundStyle(.white).padding(6).frame(maxWidth: .infinity).background(.red, in: .rect(cornerRadius: 6))
                 }
                 Divider()
-                row("sun.max", "Сонце", s.solarPresent ? "\(s.solarW) W · \(String(format: "%.1f", s.solarV)) V" + (s.solarCharging ? " · заряджає" : "") : "не підключено")
+                row("sun.max", "Сонце", detail: "сьогодні " + formatEnergy(solarToday), s.solarPresent ? "\(s.solarW) W · \(String(format: "%.1f", s.solarV)) V" + (s.solarCharging ? " · заряджає" : "") : "не підключено")
                 row("bolt", "Мережа", s.gridPresent ? "\(s.gridW) W · \(String(format: "%.0f", s.gridV)) V" : "немає")
                 row("powerplug", "AC вихід", s.acOn ? "\(s.acOutW) W" : "вимкнено")
                 row("cable.connector", "DC вихід", s.dcOn ? "\(s.dcOutW) W" : "вимкнено")
+                Divider()
+                HistoryChartView(records: model.history.last24h, now: model.now)
                 Divider()
                 ControlsView(link: link, state: s, busy: debugBusy)
             } else {
@@ -55,10 +57,15 @@ struct PopoverView: View {
         return s.gridPresent ? "від мережі (pass-through)" : "очікування"
     }
 
-    private func row(_ icon: String, _ title: String, _ value: String) -> some View {
+    private var solarToday: Double {
+        solarEnergyWh(model.history.last24h, since: Calendar.current.startOfDay(for: model.now))
+    }
+
+    private func row(_ icon: String, _ title: String, detail: String? = nil, _ value: String) -> some View {
         HStack {
             Image(systemName: icon).frame(width: 18)
             Text(title)
+            if let detail { Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
             Spacer()
             Text(value).foregroundStyle(.secondary).monospacedDigit()
         }

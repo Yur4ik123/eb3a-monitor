@@ -86,3 +86,12 @@ public final class HistoryStore: @unchecked Sendable {
         try data.write(to: fileURL, options: .atomic)
     }
 }
+
+/// Енергія від сонця: кожен запис — середня потужність за хвилину.
+public func solarEnergyWh(_ records: [HistoryRecord], since: Date) -> Double {
+    records.filter { $0.minute >= since }.reduce(0) { $0 + $1.solarW / 60 }
+}
+
+public func formatEnergy(_ wh: Double) -> String {
+    wh < 100 ? "\(Int(wh.rounded())) Вт·год" : String(format: "%.2f кВт·год", wh / 1000).replacingOccurrences(of: ".", with: ",")
+}

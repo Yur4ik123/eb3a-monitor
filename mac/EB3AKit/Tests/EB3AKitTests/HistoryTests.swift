@@ -43,3 +43,25 @@ final class HistoryTests: XCTestCase {
         XCTAssertEqual(try HistoryStore(fileURL: tmpFile()).records(since: .distantPast), [])
     }
 }
+
+final class SolarEnergyTests: XCTestCase {
+    func rec(_ minute: TimeInterval, solar: Double) -> HistoryRecord {
+        HistoryRecord(minute: Date(timeIntervalSince1970: minute), soc: 50, solarW: solar, gridW: 0, acOutW: 0, dcOutW: 0,
+                      gridPresent: true, solarCharging: solar > 0)
+    }
+
+    func testSolarEnergySinceSumsMinutes() {
+        let recs = (0..<60).map { rec(Double($0) * 60, solar: 120) }
+        XCTAssertEqual(solarEnergyWh(recs, since: .distantPast), 120, accuracy: 0.001)
+    }
+
+    func testSolarEnergyRespectsSince() {
+        let recs = [rec(0, solar: 600), rec(3600, solar: 600)]
+        XCTAssertEqual(solarEnergyWh(recs, since: Date(timeIntervalSince1970: 1800)), 10, accuracy: 0.001)
+    }
+
+    func testFormatEnergy() {
+        XCTAssertEqual(formatEnergy(420), "0,42 кВт·год")
+        XCTAssertEqual(formatEnergy(35), "35 Вт·год")
+    }
+}
