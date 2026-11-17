@@ -9,69 +9,77 @@ struct ControlsView: View {
     let state: StationState
 
     @State private var busy: String?
+
+    init(link: StationLink, state: StationState, busy: String? = nil) {
+        self.link = link
+        self.state = state
+        _busy = State(initialValue: busy)
+    }
     @State private var error: String?
     @State private var confirmACOff = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
-                if Self.acControlVerified {
-                    switchRow("AC вихід", key: "ac", isOn: state.acCommand) { on in
-                        if !on && !state.gridPresent { confirmACOff = true } else { send("ac", [(Reg.ac, on ? 1 : 0)]) }
-                    }
-                } else {
-                    row("AC вихід", key: "ac") {
-                        Text("не перевірено").font(.caption).foregroundStyle(.secondary)
-                    }
+        VStack(alignment: .leading, spacing: 10) {
+            if Self.acControlVerified {
+                switchRow("AC вихід", key: "ac", isOn: state.acCommand) { on in
+                    if !on && !state.gridPresent { confirmACOff = true } else { send("ac", [(Reg.ac, on ? 1 : 0)]) }
                 }
-                switchRow("DC вихід", key: "dc", isOn: state.dcCommand) { send("dc", [(Reg.dc, $0 ? 1 : 0)]) }
-                segmentRow("Ліхтар", key: "led", current: state.led.raw,
-                           options: [(4, "Вимк"), (1, "Слабкий"), (2, "Сильний"), (3, "SOS")]) { send("led", [(Reg.led, $0)]) }
-                segmentRow("Заряд", key: "charge", current: state.chargeMode.raw,
-                           options: [(0, "Standard"), (1, "Silent"), (2, "Turbo")]) { send("charge", [(Reg.chargeMode, $0)]) }
-                switchRow("ECO", key: "eco", isOn: state.ecoOn) { send("eco", WritePolicy.ecoWrites(on: $0)) }
-                if state.ecoOn {
-                    segmentRow("Таймер ECO", key: "ecoHours", current: UInt16(state.ecoHours),
-                               options: (1...4).map { (UInt16($0), "\($0) год") }) { send("ecoHours", [(Reg.ecoHours, $0)]) }
+            } else {
+                HStack {
+                    label("AC вихід", key: "ac")
+                    Text("не перевірено").font(.caption).foregroundStyle(.secondary)
                 }
-                switchRow("Power lifting", key: "lift", isOn: state.powerLifting) { send("lift", [(Reg.powerLifting, $0 ? 1 : 0)]) }
             }
-            if case .unknown(let n) = state.chargeMode {
-                Text("Режим заряду: інший (\(n))").font(.caption).foregroundStyle(.secondary)
+            switchRow("DC вихід", key: "dc", isOn: state.dcCommand) { send("dc", [(Reg.dc, $0 ? 1 : 0)]) }
+            switchRow("ECO", key: "eco", isOn: state.ecoOn) { send("eco", WritePolicy.ecoWrites(on: $0)) }
+            switchRow("Power lifting", key: "lift", isOn: state.powerLifting) { send("lift", [(Reg.powerLifting, $0 ? 1 : 0)]) }
+            segmentRow("Ліхтар", key: "led", current: state.led.raw,
+                       options: [(4, "Вимк"), (1, "Слабкий"), (2, "Сильний"), (3, "SOS")]) { send("led", [(Reg.led, $0)]) }
+            segmentRow("Режим заряду" + unknownSuffix, key: "charge", current: state.chargeMode.raw,
+                       options: [(0, "Standard"), (1, "Silent"), (2, "Turbo")]) { send("charge", [(Reg.chargeMode, $0)]) }
+            if state.ecoOn {
+                segmentRow("Таймер ECO", key: "ecoHours", current: UInt16(state.ecoHours),
+                           options: (1...4).map { (UInt16($0), "\($0) год") }) { send("ecoHours", [(Reg.ecoHours, $0)]) }
             }
-            if let error { Text(error).font(.caption).foregroundStyle(.red) }
+            if let error { Text(error).font(.caption).foregroundStyle(.red).lineLimit(2) }
         }
-        .disabled(busy != nil)
+        // Не .disabled: у неактивному стані сегменти macOS 26 ширшають і вікно «розлазиться».
+        .allowsHitTesting(busy == nil)
         .confirmationDialog("Вимкнути AC? Мережі немає — навантаження знеструмиться.", isPresented: $confirmACOff) {
             Button("Вимкнути AC", role: .destructive) { send("ac", [(Reg.ac, 0)]) }
         }
     }
 
-    /// Рядок сітки: підпис зі спінером (фіксована ширина) · контрол.
-    private func row(_ title: String, key: String, @ViewBuilder content: () -> some View) -> some View {
-        GridRow {
-            HStack(spacing: 4) {
-                Text(title).font(.callout).foregroundStyle(.secondary).lineLimit(1)
-                Spacer(minLength: 0)
-                ProgressView().controlSize(.mini).opacity(busy == key ? 1 : 0)
-            }
-            .frame(width: 96)
-            content().frame(maxWidth: .infinity, alignment: .leading)
+    private var unknownSuffix: String {
+        if case .unknown(let n) = state.chargeMode { return " (інший: \(n))" }
+        return ""
+    }
+
+    private func label(_ title: String, key: String) -> some View {
+        HStack(spacing: 4) {
+            Text(title).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+            Spacer(minLength: 0)
+            ProgressView().controlSize(.mini).opacity(busy == key ? 1 : 0)
         }
+        .frame(width: 110)
     }
 
     private func switchRow(_ title: String, key: String, isOn: Bool, action: @escaping (Bool) -> Void) -> some View {
-        row(title, key: key) {
+        HStack {
+            label(title, key: key)
             Toggle(title, isOn: Binding(get: { isOn }, set: action))
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .labelsHidden()
+            Spacer(minLength: 0)
         }
     }
 
+    /// Підпис над сегментами: сегментам — уся ширина вікна.
     private func segmentRow(_ title: String, key: String, current: UInt16?, options: [(UInt16, String)],
                             action: @escaping (UInt16) -> Void) -> some View {
-        row(title, key: key) {
+        VStack(alignment: .leading, spacing: 4) {
+            label(title, key: key)
             Picker(title, selection: Binding(get: { current ?? UInt16.max }, set: action)) {
                 ForEach(options, id: \.0) { Text($0.1).tag($0.0) }
             }
@@ -83,6 +91,7 @@ struct ControlsView: View {
     }
 
     private func send(_ key: String, _ writes: [(address: UInt16, value: UInt16)]) {
+        guard busy == nil else { return }
         busy = key
         error = nil
         Task {

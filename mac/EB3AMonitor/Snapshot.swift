@@ -15,7 +15,7 @@ enum Snapshot {
         let model = AppModel(startLink: false)
         model.link.injectForSnapshot(StationState(registers: regs, at: Date())!)
 
-        let host = NSHostingView(rootView: PopoverView(model: model).background(Color(nsColor: .windowBackgroundColor)))
+        let host = NSHostingView(rootView: PopoverView(model: model, debugBusy: ProcessInfo.processInfo.environment["SNAP_BUSY"]).background(Color(nsColor: .windowBackgroundColor)))
         host.appearance = NSAppearance(named: .darkAqua)
         host.frame = NSRect(origin: .zero, size: host.fittingSize)
         host.layoutSubtreeIfNeeded()

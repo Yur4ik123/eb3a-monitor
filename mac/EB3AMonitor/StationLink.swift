@@ -197,10 +197,13 @@ final class StationLink: NSObject {
     private func drainWrites() async {
         while !writeQueue.isEmpty {
             let job = writeQueue.removeFirst()
+            let t0 = Date()
             do {
                 for w in job.writes { try await performWrite(w.address, w.value) }
+                log.notice("write \(job.writes.map { "\($0.address)=\($0.value)" }.joined(separator: ","), privacy: .public) ok \(Int(Date().timeIntervalSince(t0) * 1000))ms")
                 job.cont.resume()
             } catch {
+                log.error("write \(job.writes.map { "\($0.address)=\($0.value)" }.joined(separator: ","), privacy: .public) failed: \(String(describing: error), privacy: .public)")
                 job.cont.resume(throwing: error)
             }
         }

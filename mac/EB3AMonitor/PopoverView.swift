@@ -3,6 +3,7 @@ import SwiftUI
 
 struct PopoverView: View {
     let model: AppModel
+    var debugBusy: String? = nil
     @State private var loginOn = LoginItem.isEnabled
 
     private var link: StationLink { model.link }
@@ -25,7 +26,7 @@ struct PopoverView: View {
                 row("powerplug", "AC вихід", s.acOn ? "\(s.acOutW) W" : "вимкнено")
                 row("cable.connector", "DC вихід", s.dcOn ? "\(s.dcOutW) W" : "вимкнено")
                 Divider()
-                ControlsView(link: link, state: s)
+                ControlsView(link: link, state: s, busy: debugBusy)
             } else {
                 Text(placeholder).foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 60)
             }
