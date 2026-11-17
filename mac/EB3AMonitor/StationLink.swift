@@ -27,7 +27,9 @@ final class StationLink: NSObject {
     @ObservationIgnored private var writeChar: CBCharacteristic?
     @ObservationIgnored private var pending: (id: Int, assembler: ResponseAssembler, cont: CheckedContinuation<ModbusResponse, Error>)?
     @ObservationIgnored private var requestID = 0
-    @ObservationIgnored private var writeQueue: [(writes: [(address: UInt16, value: UInt16)], cont: CheckedContinuation<Void, Error>)] = []
+    @ObservationIgnored private var writeQueue: [(id: Int, writes: [(address: UInt16, value: UInt16)], cont: CheckedContinuation<Void, Error>)] = []
+    @ObservationIgnored private var writeID = 0
+    @ObservationIgnored private var watchdog: Task<Void, Never>?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var reconnectTask: Task<Void, Never>?
     @ObservationIgnored private var estimator = RuntimeEstimator()
@@ -71,13 +73,21 @@ final class StationLink: NSObject {
     func resume() {
         isPaused = false
         attempt = 0
-        connectOrScan()
+        if central.state == .poweredOn { connectOrScan() } else { status = .bluetoothOff }
     }
 
     func write(_ writes: [(address: UInt16, value: UInt16)]) async throws {
         guard writes.allSatisfy({ WritePolicy.isAllowed(address: $0.address, value: $0.value) }) else { throw LinkError.notAllowed }
         guard status == .connected else { throw LinkError.notConnected }
-        try await withCheckedThrowingContinuation { writeQueue.append((writes, $0)) }
+        writeID += 1
+        let id = writeID
+        // Якщо цикл опитування мертвий, запит у черзі не повинен висіти вічно.
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(12))
+            guard let self, let i = self.writeQueue.firstIndex(where: { $0.id == id }) else { return }
+            self.writeQueue.remove(at: i).cont.resume(throwing: LinkError.timeout)
+        }
+        try await withCheckedThrowingContinuation { writeQueue.append((id, writes, $0)) }
     }
 
     // MARK: - Підключення
@@ -99,6 +109,19 @@ final class StationLink: NSObject {
         p.delegate = self
         status = .connecting
         central.connect(p)
+        watchdog?.cancel()
+        // З'єднання без робочої підписки не повинне висіти вічно й блокувати станцію.
+        watchdog = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard !Task.isCancelled, let self, self.status != .connected, self.peripheral === p else { return }
+            log.error("watchdog: no notify after 15 s")
+            self.recover()
+        }
+    }
+
+    private func recover() {
+        teardown()
+        scheduleReconnect()
     }
 
     private func wake() {
@@ -121,11 +144,12 @@ final class StationLink: NSObject {
     }
 
     private func teardown() {
+        watchdog?.cancel()
         pollTask?.cancel()
         pollTask = nil
         reconnectTask?.cancel()
         if central?.isScanning == true { central.stopScan() }
-        if let p = peripheral { central.cancelPeripheralConnection(p) }
+        if let p = peripheral, central.state == .poweredOn { central.cancelPeripheralConnection(p) }
         peripheral = nil
         writeChar = nil
         failPending(LinkError.notConnected)
@@ -147,7 +171,10 @@ final class StationLink: NSObject {
                 guard let self else { return }
                 let t0 = Date()
                 await self.drainWrites()
-                guard await self.poll() else { return }
+                guard await self.poll() else {
+                    self.recover()
+                    return
+                }
                 let rest = Self.cycle - Date().timeIntervalSince(t0)
                 if rest > 0 { try? await Task.sleep(for: .seconds(rest)) }
             }
@@ -175,10 +202,7 @@ final class StationLink: NSObject {
         } catch LinkError.timeout {
             log.error("timeout")
             timeouts += 1
-            if timeouts >= 3, let p = peripheral {
-                central.cancelPeripheralConnection(p)
-                return false
-            }
+            if timeouts >= 3 { return false }
         } catch {
             log.error("poll error: \(String(describing: error), privacy: .public)")
             if case LinkError.notConnected = error { return false }
@@ -225,6 +249,7 @@ final class StationLink: NSObject {
         requestID += 1
         let id = requestID
         return try await withCheckedThrowingContinuation { cont in
+            if let old = pending { old.cont.resume(throwing: LinkError.notConnected) }
             pending = (id, ResponseAssembler(expect: expect), cont)
             p.writeValue(cmd, for: ch, type: .withResponse)
             Task { [weak self] in
@@ -272,11 +297,17 @@ extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     nonisolated func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         log.error("connect failed: \(String(describing: error), privacy: .public)")
-        MainActor.assumeIsolated { teardown(); scheduleReconnect() }
+        MainActor.assumeIsolated {
+            guard peripheral === self.peripheral else { return }
+            recover()
+        }
     }
 
     nonisolated func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         MainActor.assumeIsolated {
+            // Запізнілий колбек від попереднього з'єднання (після pause/resume) ігноруємо.
+            guard peripheral === self.peripheral else { return }
+            watchdog?.cancel()
             pollTask?.cancel()
             pollTask = nil
             self.peripheral = nil
@@ -303,6 +334,7 @@ extension StationLink: CBCentralManagerDelegate, CBPeripheralDelegate {
         let ok = characteristic.isNotifying && error == nil
         MainActor.assumeIsolated {
             guard ok, writeChar != nil else { return }
+            watchdog?.cancel()
             status = .connected
             startPolling()
         }

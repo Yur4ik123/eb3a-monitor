@@ -48,3 +48,32 @@ final class RuntimeAndTextTests: XCTestCase {
         XCTAssertEqual(MenuBarText.make(state: nil, now: sampleTime), "🔋 —")
     }
 }
+
+final class ReviewFixTests: XCTestCase {
+    func testEstimateReseedsWhenChargingTurnsToDischarge() throws {
+        var e = RuntimeEstimator(); let t0 = Date(timeIntervalSince1970: 0)
+        for i in 0...3600 { e.add(netW: -100, at: t0 + Double(i)) }
+        for i in 1...10 { e.add(netW: 150, at: t0 + 3600 + Double(i * 2)) }
+        // 87% від 268 Wh × 0.9 при 150 W ≈ 1.4 год, а не десятки годин
+        XCTAssertEqual(try XCTUnwrap(e.remaining(soc: 87)), 268 * 0.9 * 0.87 / 150 * 3600, accuracy: 600)
+    }
+
+    func testSnapshotStaleAt() {
+        let snap = SharedSnapshot(state: sample(at: sampleTime), remaining: nil, socLast24h: [])
+        XCTAssertEqual(snap.staleAt, sampleTime + 600)
+    }
+
+    func testWithTimeoutThrows() async {
+        do {
+            _ = try await withTimeout(seconds: 0.1) { try await Task.sleep(for: .seconds(5)); return 1 }
+            XCTFail("expected timeout")
+        } catch {
+            XCTAssertTrue(error is TimeoutError)
+        }
+    }
+
+    func testWithTimeoutReturnsValue() async throws {
+        let v = try await withTimeout(seconds: 1) { 42 }
+        XCTAssertEqual(v, 42)
+    }
+}

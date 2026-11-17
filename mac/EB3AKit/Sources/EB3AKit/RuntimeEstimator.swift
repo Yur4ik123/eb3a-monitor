@@ -15,7 +15,8 @@ public struct RuntimeEstimator: Sendable {
     }
 
     public mutating func add(netW: Double, at date: Date) {
-        guard let prev = smoothedW, let last = lastAt else {
+        // Початок розряду після заряду/простою — без «хвоста» від'ємних значень.
+        guard let prev = smoothedW, let last = lastAt, !(prev <= 5 && netW > 5) else {
             smoothedW = netW
             lastAt = date
             return

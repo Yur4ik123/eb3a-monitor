@@ -14,7 +14,12 @@ public struct SharedSnapshot: Codable, Equatable, Sendable {
         self.solarTodayWh = solarTodayWh
     }
 
-    public func isStale(now: Date, maxAge: TimeInterval = 600) -> Bool {
+    public static let maxAge: TimeInterval = 600
+
+    /// Після цього моменту віджет має показати «немає даних».
+    public var staleAt: Date { state.updatedAt.addingTimeInterval(Self.maxAge) }
+
+    public func isStale(now: Date, maxAge: TimeInterval = SharedSnapshot.maxAge) -> Bool {
         now.timeIntervalSince(state.updatedAt) > maxAge
     }
 

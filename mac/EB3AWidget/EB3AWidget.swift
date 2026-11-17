@@ -15,7 +15,13 @@ struct Provider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<StationEntry>) -> Void) {
-        completion(Timeline(entries: [entry()], policy: .after(.now.addingTimeInterval(15 * 60))))
+        let now = entry()
+        var entries = [now]
+        // Окремий запис на момент застарівання: без нових даних віджет покаже «Немає даних».
+        if let stale = now.snapshot?.staleAt, stale > now.date {
+            entries.append(StationEntry(date: stale, snapshot: now.snapshot))
+        }
+        completion(Timeline(entries: entries, policy: .after(.now.addingTimeInterval(15 * 60))))
     }
 
     private func entry() -> StationEntry {
