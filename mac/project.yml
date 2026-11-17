@@ -21,6 +21,8 @@ targets:
     sources: [EB3AMonitor]
     dependencies:
       - package: EB3AKit
+      - target: EB3AWidget
+        embed: true
     info:
       path: EB3AMonitor/Info.plist
       properties:
@@ -36,3 +38,25 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.legion.eb3amonitor
+  EB3AWidget:
+    type: app-extension
+    platform: macOS
+    sources: [EB3AWidget]
+    dependencies:
+      - package: EB3AKit
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: EB3AWidget/Info.plist
+      properties:
+        CFBundleDisplayName: EB3A
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: EB3AWidget/EB3AWidget.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups: [<TEAM_ID>.eb3a]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.legion.eb3amonitor.widget

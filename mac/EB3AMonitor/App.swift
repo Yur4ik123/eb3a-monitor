@@ -13,7 +13,12 @@ final class AppModel {
         history = startLink ? HistoryRecorder(store: HistoryRecorder.defaultStore())
             : HistoryRecorder(store: HistoryStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("snap.jsonl")))
         let history = history
-        link.onState = { history.ingest($0) }
+        let bridge = WidgetBridge()
+        let link = link
+        link.onState = { s in
+            history.ingest(s)
+            bridge.publish(state: s, remaining: link.remaining, history: history.last24h)
+        }
         if startLink { link.start() }
         ticker = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.now = Date() }
