@@ -16,6 +16,8 @@ public enum Reg {
     public static let dcOn: UInt16 = 49
     public static let chargeState: UInt16 = 53
     public static let overTemp: UInt16 = 60
+    /// Слова сигналів/помилок (офіційний додаток показує з них коди Axxx).
+    public static let alarmWords: ClosedRange<UInt16> = 54...62
     public static let gridV: UInt16 = 77
     public static let solarV: UInt16 = 86
 
@@ -29,12 +31,12 @@ public enum Reg {
     public static let powerLifting: UInt16 = 3066
 
     /// Дрібні блоки: великі (53+ регістрів) станція віддає за ~3 с.
-    public static let pollBlocks: [(start: UInt16, count: UInt16)] = [(36, 14), (50, 11), (77, 10), (3000, 10), (3030, 5), (3060, 7)]
+    public static let pollBlocks: [(start: UInt16, count: UInt16)] = [(36, 14), (50, 13), (77, 10), (3000, 10), (3030, 5), (3060, 7)]
 
-    static let decoded: Set<UInt16> = [
+    static let decoded: Set<UInt16> = Set<UInt16>([
         solarW, gridW, acOutW, dcOutW, generated, soc, solarPresent, gridPresent, solarCharging, upsActive,
         acOn, dcOn, chargeState, overTemp, gridV, solarV, ac, dc, led, eco, ecoHours, chargeMode, powerLifting,
-    ]
+    ]).union(alarmWords)
 }
 
 public enum WritePolicy {

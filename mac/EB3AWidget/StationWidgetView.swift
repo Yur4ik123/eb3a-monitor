@@ -42,7 +42,12 @@ struct StationWidgetView: View {
                 if s.gridPresent { Image(systemName: "bolt.fill").foregroundStyle(.green).font(.caption) }
             }
             ProgressView(value: Double(s.soc), total: 100).tint(s.soc > 20 ? .green : .red)
-            Text(status(s)).font(.caption2).foregroundStyle(.secondary)
+            if let a = s.alerts.first {
+                Label(s.alerts.count > 1 ? "\(a.title) +\(s.alerts.count - 1)" : a.title, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption2).foregroundStyle(.orange).lineLimit(2)
+            } else {
+                Text(status(s)).font(.caption2).foregroundStyle(.secondary)
+            }
             if !s.gridPresent, s.batteryNetW > 5, let r = snap.remaining {
                 Label(formatRemaining(r), systemImage: "hourglass").font(.caption2).foregroundStyle(.orange)
             }

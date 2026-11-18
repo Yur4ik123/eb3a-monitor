@@ -58,6 +58,8 @@ public struct StationState: Codable, Equatable, Sendable {
     public var ecoHours: Int
     public var chargeMode: ChargeMode
     public var powerLifting: Bool
+    /// Регістри 54...62 як є.
+    public var alarmWords: [UInt16]
     public var updatedAt: Date
 
     /// Плюс — батарея розряджається.
@@ -83,6 +85,7 @@ extension StationState {
             ecoOn: b(Reg.eco), ecoHours: i(Reg.ecoHours),
             chargeMode: ChargeMode(raw: i(Reg.chargeMode)),
             powerLifting: b(Reg.powerLifting),
+            alarmWords: Reg.alarmWords.map { r[$0]! },
             updatedAt: date
         )
     }

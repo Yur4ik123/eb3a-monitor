@@ -21,6 +21,7 @@ enum Snapshot {
         for b in Reg.pollBlocks { for a in b.start..<b.start + b.count { regs[a] = 0 } }
         regs[Reg.soc] = 87; regs[Reg.solarPresent] = 1; regs[Reg.solarW] = 142; regs[Reg.solarV] = 2294
         regs[Reg.acOutW] = 180; regs[Reg.acOn] = 1; regs[Reg.ac] = 1; regs[Reg.dc] = 1; regs[Reg.dcOn] = 1
+        if ProcessInfo.processInfo.environment["SNAP_ALERT"] != nil { regs[54] = 2; regs[Reg.gridPresent] = 1; regs[Reg.gridV] = 1911 }
         regs[Reg.led] = 4; regs[Reg.eco] = 1; regs[Reg.ecoHours] = 2; regs[Reg.chargeMode] = 0; regs[Reg.powerLifting] = 1
         let model = AppModel(startLink: false)
         model.link.injectForSnapshot(StationState(registers: regs, at: Date())!)

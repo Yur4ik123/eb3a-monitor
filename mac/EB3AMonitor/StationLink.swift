@@ -241,7 +241,7 @@ final class StationLink: NSObject {
             guard let s = StationState(registers: regs, at: Date()) else { return true }
             estimator.add(netW: Double(s.batteryNetW), at: s.updatedAt)
             if state.map({ s.updatedAt.timeIntervalSince($0.updatedAt) > 60 || $0.soc != s.soc }) ?? true {
-                log.notice("soc \(s.soc) solar \(s.solarW)W grid \(s.gridPresent)")
+                log.notice("soc \(s.soc) solar \(s.solarW)W grid \(s.gridPresent) alerts \(s.alerts.compactMap(\.code).joined(separator: ","), privacy: .public)")
             }
             state = s
             remaining = estimator.remaining(soc: s.soc)

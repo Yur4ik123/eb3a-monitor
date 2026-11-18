@@ -18,10 +18,7 @@ struct PopoverView: View {
                 StationPickerView(link: link)
             } else if let s = fresh {
                 header(s)
-                if s.overTemp {
-                    Label("Перегрів станції", systemImage: "thermometer.high")
-                        .foregroundStyle(.white).padding(6).frame(maxWidth: .infinity).background(.red, in: .rect(cornerRadius: 6))
-                }
+                if !s.alerts.isEmpty { AlertsView(alerts: s.alerts) }
                 Divider()
                 row("sun.max", "Сонце", detail: "сьогодні " + formatEnergy(solarToday), s.solarPresent ? "\(s.solarW) W · \(String(format: "%.1f", s.solarV)) V" + (s.solarCharging ? " · заряджає" : "") : "не підключено")
                 row("bolt", "Мережа", s.gridPresent ? "\(s.gridW) W · \(String(format: "%.0f", s.gridV)) V" : "немає")
@@ -126,5 +123,31 @@ struct PopoverView: View {
         case .bluetoothOff: "Bluetooth недоступний"
         case .idle: "Перепідключення…"
         }
+    }
+}
+
+/// Сигнали станції (коди Axxx офіційного додатку або «регістр.біт»).
+struct AlertsView: View {
+    let alerts: [StationAlert]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(alerts.enumerated()), id: \.offset) { _, a in
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text(a.title).font(.callout.weight(.semibold))
+                            Spacer()
+                            if let c = a.code { Text(c).font(.caption.monospaced()).foregroundStyle(.secondary) }
+                        }
+                        Text(a.detail).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.15), in: .rect(cornerRadius: 8))
     }
 }
