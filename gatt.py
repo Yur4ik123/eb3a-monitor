@@ -16,4 +16,4 @@ async def main(addr):
                         line += f" read_err={e!r}"
                 print(line)
 
-asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else "<UUID>"))
+asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else __import__("os").environ["EB3A_ADDRESS"]))

@@ -1,7 +1,9 @@
 #!/bin/zsh
 # Збірка Release і встановлення в /Applications: ./install.sh
 set -e
-cd "$(dirname "$0")/mac"
+ROOT=$(cd "$(dirname "$0")" && pwd)
+source "$ROOT/mac/team.sh"
+cd "$ROOT/mac"
 xcodegen generate -q
 xcodebuild -project EB3AMonitor.xcodeproj -scheme EB3AMonitor -configuration Release \
   -derivedDataPath ../.build-dd -allowProvisioningUpdates build -quiet

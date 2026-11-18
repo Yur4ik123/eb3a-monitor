@@ -5,6 +5,7 @@
 """
 
 import asyncio
+import os
 import json
 import sys
 from datetime import datetime
@@ -14,7 +15,7 @@ from bleak import BleakClient
 
 from probe import NOTIFY_UUID, WRITE_UUID, crc16, read_cmd
 
-DEFAULT_ADDRESS = "<UUID>"
+DEFAULT_ADDRESS = os.environ.get("EB3A_ADDRESS", "")  # UUID з bluetti-scan
 RANGES = [(10, 210), (3000, 80)]
 CHUNK = 10
 SNAPS = Path(__file__).parent / "snaps"

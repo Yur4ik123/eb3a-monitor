@@ -10,3 +10,8 @@ mac/*.xcodeproj/
 DerivedData/
 .superpowers/
 .build-dd/
+mac/team.local
+mac/EB3AMonitor/Info.plist
+mac/EB3AMonitor/*.entitlements
+mac/EB3AWidget/Info.plist
+mac/EB3AWidget/*.entitlements

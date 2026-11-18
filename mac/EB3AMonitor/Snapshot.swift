@@ -6,12 +6,22 @@ import SwiftUI
 /// Рендер поповера з тестовими даними в PNG: `EB3AMonitor --snapshot > base64`.
 @MainActor
 enum Snapshot {
+    /// 2x незалежно від екрана, щоб скриншоти були чіткими.
+    static func retinaRep(_ view: NSView) -> NSBitmapImageRep? {
+        let size = view.bounds.size
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size.width * 2), pixelsHigh: Int(size.height * 2),
+                                   bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                   colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
+        rep?.size = size
+        return rep
+    }
+
     static func emit(_ view: some View) {
         let host = NSHostingView(rootView: view)
         host.appearance = NSAppearance(named: .darkAqua)
         host.frame = NSRect(origin: .zero, size: host.fittingSize)
         host.layoutSubtreeIfNeeded()
-        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        guard let rep = retinaRep(host) else { return }
         host.cacheDisplay(in: host.bounds, to: rep)
         print("PNG:" + (rep.representation(using: .png, properties: [:])?.base64EncodedString() ?? ""))
     }
@@ -25,14 +35,17 @@ enum Snapshot {
         regs[Reg.led] = 4; regs[Reg.eco] = 1; regs[Reg.ecoHours] = 2; regs[Reg.chargeMode] = 0; regs[Reg.powerLifting] = 1
         let model = AppModel(startLink: false)
         model.link.injectForSnapshot(StationState(registers: regs, at: Date())!)
+        model.link.nameOverride = "EB3A2200000000001"
         if ProcessInfo.processInfo.environment["SNAP_PICKER"] != nil { model.link.injectChoosingForSnapshot() }
         let now = Date()
         model.history.injectForSnapshot((0..<1440).map { i in
             let t = now.addingTimeInterval(Double(i - 1440) * 60)
-            let h = Double(i) / 60
-            let sun = max(0, sin((h - 6) / 12 * .pi)) * 180
-            return HistoryRecord(minute: t, soc: Int(60 + 30 * sin(h / 24 * 2 * .pi)), solarW: sun, gridW: 0,
-                                 acOutW: 100, dcOutW: 0, gridPresent: h < 10, solarCharging: sun > 0)
+            let c = Calendar.current.dateComponents([.hour, .minute], from: t)
+            let h = Double(c.hour!) + Double(c.minute!) / 60
+            let sun = max(0, sin((h - 7) / 11 * .pi)) * 180
+            let soc = Int(55 + 35 * max(0, sin((h - 9) / 10 * .pi)))
+            return HistoryRecord(minute: t, soc: soc, solarW: sun, gridW: 0,
+                                 acOutW: 100, dcOutW: 0, gridPresent: false, solarCharging: sun > 0)
         })
 
         if let w = ProcessInfo.processInfo.environment["SNAP_WIDGET"] {
@@ -48,7 +61,7 @@ enum Snapshot {
         host.appearance = NSAppearance(named: .darkAqua)
         host.frame = NSRect(origin: .zero, size: host.fittingSize)
         host.layoutSubtreeIfNeeded()
-        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        guard let rep = retinaRep(host) else { return }
         host.cacheDisplay(in: host.bounds, to: rep)
         // Контейнер sandbox закритий для інших процесів — віддаємо PNG через stdout.
         print("PNG:" + (rep.representation(using: .png, properties: [:])?.base64EncodedString() ?? ""))

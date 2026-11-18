@@ -23,7 +23,8 @@ final class StationLink: NSObject {
     /// Режим вибору станції: скан без автопідключення.
     private(set) var choosing = false
     private(set) var discovered: [Discovered] = []
-    var stationName: String? { defaults.string(forKey: "stationName") }
+    @ObservationIgnored var nameOverride: String?
+    var stationName: String? { nameOverride ?? defaults.string(forKey: "stationName") }
     var stationID: UUID? { defaults.string(forKey: "peripheralID").flatMap(UUID.init(uuidString:)) }
 
     struct Discovered: Identifiable, Equatable {
@@ -72,7 +73,7 @@ final class StationLink: NSObject {
         choosing = true
         status = .scanning
         discovered = [Discovered(id: UUID(), name: "EB3A2200000000001", rssi: -48),
-                      Discovered(id: UUID(), name: "EB3A2310001234567", rssi: -82)]
+                      Discovered(id: UUID(), name: "EB3A2200000000002", rssi: -82)]
     }
 
     func injectForSnapshot(_ s: StationState) {

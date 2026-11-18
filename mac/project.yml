@@ -5,7 +5,7 @@ options:
     macOS: "26.0"
 settings:
   base:
-    DEVELOPMENT_TEAM: <TEAM_ID>
+    DEVELOPMENT_TEAM: "${EB3A_TEAM}"
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "0.1"
@@ -31,12 +31,13 @@ targets:
         CFBundleDisplayName: EB3A Monitor
         LSUIElement: true
         NSBluetoothAlwaysUsageDescription: Підключення до зарядної станції Bluetti EB3A
+        EB3AAppGroup: "${EB3A_TEAM}.eb3a"
     entitlements:
       path: EB3AMonitor/EB3AMonitor.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.device.bluetooth: true
-        com.apple.security.application-groups: [<TEAM_ID>.eb3a]
+        com.apple.security.application-groups: ["${EB3A_TEAM}.eb3a"]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.legion.eb3amonitor
@@ -53,13 +54,14 @@ targets:
       path: EB3AWidget/Info.plist
       properties:
         CFBundleDisplayName: EB3A
+        EB3AAppGroup: "${EB3A_TEAM}.eb3a"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: EB3AWidget/EB3AWidget.entitlements
       properties:
         com.apple.security.app-sandbox: true
-        com.apple.security.application-groups: [<TEAM_ID>.eb3a]
+        com.apple.security.application-groups: ["${EB3A_TEAM}.eb3a"]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.legion.eb3amonitor.widget

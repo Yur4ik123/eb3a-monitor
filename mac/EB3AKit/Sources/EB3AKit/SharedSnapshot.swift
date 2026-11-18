@@ -35,11 +35,13 @@ public struct SharedSnapshot: Codable, Equatable, Sendable {
 }
 
 public enum SharedStore {
-    public static let groupID = "<TEAM_ID>.eb3a"
+    /// App Group з Info.plist (EB3AAppGroup = <TEAM_ID>.eb3a), задається при збірці.
+    public static var groupID: String { Bundle.main.object(forInfoDictionaryKey: "EB3AAppGroup") as? String ?? "" }
     static let fileName = "snapshot.json"
 
     public static var containerURL: URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)
+        guard !groupID.isEmpty else { return nil }
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID)
     }
 
     public static func write(_ s: SharedSnapshot, to dir: URL) throws {
