@@ -3,6 +3,7 @@ import SwiftUI
 
 struct PopoverView: View {
     let model: AppModel
+    @Environment(\.openWindow) private var openWindow
     var debugBusy: String? = nil
     @State private var loginOn = LoginItem.isEnabled
 
@@ -65,6 +66,14 @@ struct PopoverView: View {
             Image(systemName: icon).frame(width: 18)
             Text(title)
             if let detail { Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+            if icon == "sun.max" {
+                Button {
+                    openWindow(id: "solar")
+                    NSApp.activate()
+                } label: { Image(systemName: "chart.bar.xaxis") }
+                .buttonStyle(.borderless)
+                .help("Статистика сонця")
+            }
             Spacer()
             Text(value).foregroundStyle(.secondary).monospacedDigit()
         }

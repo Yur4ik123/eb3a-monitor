@@ -10,7 +10,7 @@ final class AppModel {
     @ObservationIgnored private var ticker: Timer?
 
     init(startLink: Bool = true) {
-        history = startLink ? HistoryRecorder(store: HistoryRecorder.defaultStore())
+        history = startLink ? HistoryRecorder.makeDefault()
             : HistoryRecorder(store: HistoryStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("snap.jsonl")))
         let history = history
         let bridge = WidgetBridge()
@@ -50,5 +50,10 @@ struct EB3AMonitorApp: App {
             Text(model.menuBarText)
         }
         .menuBarExtraStyle(.window)
+
+        Window("Сонце", id: "solar") {
+            SolarStatsView(days: model.history.days, now: model.now)
+        }
+        .defaultSize(width: 560, height: 620)
     }
 }

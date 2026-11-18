@@ -48,6 +48,23 @@ enum Snapshot {
                                  acOutW: 100, dcOutW: 0, gridPresent: false, solarCharging: sun > 0)
         })
 
+        if ProcessInfo.processInfo.environment["SNAP_SOLAR"] != nil {
+            let cal = Calendar.current
+            let today = cal.startOfDay(for: now)
+            let fake: [DaySummary] = (0..<30).compactMap { (off: Int) -> DaySummary? in
+                guard off != 9 else { return nil }
+                let day = cal.date(byAdding: .day, value: -off, to: today)!
+                let k = Double((off * 37) % 11) / 10 + 0.2
+                let hourly = (0..<24).map { h in max(0, sin(Double(h - 7) / 11 * .pi)) * 140 * k }
+                let peakH = 12 + off % 3
+                return DaySummary(day: SolarDays.dayKey(day, calendar: cal), wh: hourly.reduce(0, +), hourlyWh: hourly,
+                                  peakW: 180 * k, peakAt: day.addingTimeInterval(Double(peakH) * 3600 + 1500),
+                                  firstAt: day.addingTimeInterval(7.5 * 3600), lastAt: day.addingTimeInterval(17.2 * 3600),
+                                  minutesCovered: off == 4 ? 700 : (off == 0 ? Int(now.timeIntervalSince(today) / 60) : 1440))
+            }
+            emit(SolarStatsView(days: fake, now: now).frame(width: 560, height: 620).background(Color(nsColor: .windowBackgroundColor)))
+            return
+        }
         if let w = ProcessInfo.processInfo.environment["SNAP_WIDGET"] {
             let snap = SharedSnapshot(state: model.link.state!, remaining: model.link.remaining,
                                       socLast24h: SharedSnapshot.socSeries(from: model.history.last24h, now: now),

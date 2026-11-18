@@ -11,6 +11,18 @@ public struct DaySummary: Codable, Equatable, Sendable {
     public var lastAt: Date?
     public var minutesCovered: Int
 
+    public init(day: String, wh: Double, hourlyWh: [Double], peakW: Double, peakAt: Date?, firstAt: Date?, lastAt: Date?,
+                minutesCovered: Int) {
+        self.day = day
+        self.wh = wh
+        self.hourlyWh = hourlyWh
+        self.peakW = peakW
+        self.peakAt = peakAt
+        self.firstAt = firstAt
+        self.lastAt = lastAt
+        self.minutesCovered = minutesCovered
+    }
+
     /// Частка хвилин дня (для сьогодні — тих, що вже минули), коли застосунок писав дані.
     public func coverage(now: Date, calendar: Calendar) -> Double {
         guard let start = SolarDays.date(fromKey: day, calendar: calendar) else { return 0 }
